@@ -1,6 +1,6 @@
 <?php
   function conectar(){
-        $dsn = "mysql:host=localhost;dbname=mydb;charset=utf8";
+        $dsn = "mysql:host=localhost;dbname=test;charset=utf8";
         $usuario = "root";
         $clave = "";
         try {
