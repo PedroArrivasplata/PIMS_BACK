@@ -89,7 +89,9 @@
                 m.id_mascota, 
                 m.nombre, 
                 TIMESTAMPDIFF(YEAR, m.fecha_nacimiento, CURDATE()) AS edad,
-                r.nombre_raza AS raza
+                r.nombre_raza AS raza,
+                p.nombre as nombre_propietario,
+                p.apellido as apellido_propietario
             FROM mascota m
             JOIN raza r ON m.raza_id_raza = r.id_raza
             JOIN propietario_mascota p ON m.id_propietario = p.id_propietario
@@ -101,6 +103,28 @@
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
+// Obtener mascotas por coincidencia parcial en el nombre de la mascota
+    function getMascotasPorNombreParcial($nombre_mascota) {
+        $pdo = conectar();
+        $sql = "SELECT 
+                    m.id_mascota, 
+                    m.nombre, 
+                    TIMESTAMPDIFF(YEAR, m.fecha_nacimiento, CURDATE()) AS edad,
+                    r.nombre_raza AS raza,
+                    e.nombre_especie AS especie,
+                    CONCAT(p.nombre, ' ', p.apellido) AS propietario,
+                    p.dni AS dni_propietario
+                FROM mascota m
+                JOIN raza r ON m.raza_id_raza = r.id_raza
+                JOIN especie e ON r.especie_id_especie = e.id_especie
+                JOIN propietario_mascota p ON m.id_propietario = p.id_propietario
+                WHERE m.nombre LIKE :nombre_mascota";
+
+        $stmt = $pdo->prepare($sql);
+        $stmt->bindValue(':nombre_mascota', '%' . $nombre_mascota . '%', PDO::PARAM_STR);
+        $stmt->execute();
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
     // Obtener mascotas por propietario, filtrando por DNI o nombre
 function getMascotasPorPropietarioFlexible($filtro) {
     $pdo = conectar();
@@ -111,7 +135,9 @@ function getMascotasPorPropietarioFlexible($filtro) {
                 r.nombre_raza AS raza,
                 e.nombre_especie AS especie,
                 CONCAT(p.nombre, ' ', p.apellido) AS propietario,
-                p.dni AS dni_propietario
+                p.dni AS dni_propietario,
+                p.nombre as nombre_propietario,
+                p.apellido as apellido_propietario
             FROM mascota m
             JOIN raza r ON m.raza_id_raza = r.id_raza
             JOIN especie e ON r.especie_id_especie = e.id_especie
@@ -120,10 +146,19 @@ function getMascotasPorPropietarioFlexible($filtro) {
 
     $params = [];
 
-    if (!empty($filtro['dni'])) {
-    $sql .= " AND p.dni LIKE :dni";
-    $params[':dni'] = '%' . $filtro['dni'] . '%';
+    // Filtro por nombre de mascota (parcial)
+    if (!empty($filtro['nombre_mascota'])) {
+        $sql .= " AND m.nombre LIKE :nombre_mascota";
+        $params[':nombre_mascota'] = '%' . $filtro['nombre_mascota'] . '%';
     }
+
+    // Filtro por DNI de propietario (parcial)
+    if (!empty($filtro['dni'])) {
+        $sql .= " AND p.dni LIKE :dni";
+        $params[':dni'] = '%' . $filtro['dni'] . '%';
+    }
+
+    // Filtro por nombre o apellido de propietario (parcial)
     if (!empty($filtro['nombre'])) {
         $sql .= " AND (p.nombre LIKE :nombre OR p.apellido LIKE :nombre)";
         $params[':nombre'] = '%' . $filtro['nombre'] . '%';

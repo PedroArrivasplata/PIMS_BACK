@@ -34,16 +34,17 @@ switch ($method) {
                     }
                     break;
 
-                // Buscar mascotas por DNI o nombre de propietario (flexible)
+                // Buscar mascotas por DNI, nombre de propietario y/o nombre de mascota (flexible)
                 case 'mascotas_propietario_flexible':
                     $filtro = [];
                     if (isset($_GET['dni'])) $filtro['dni'] = $_GET['dni'];
                     if (isset($_GET['nombre'])) $filtro['nombre'] = $_GET['nombre'];
+                    if (isset($_GET['nombre_mascota'])) $filtro['nombre_mascota'] = $_GET['nombre_mascota'];
                     if (!empty($filtro)) {
                         echo json_encode(getMascotasPorPropietarioFlexible($filtro));
                     } else {
                         http_response_code(400);
-                        echo json_encode(['error' => 'Falta dni o nombre para buscar']);
+                        echo json_encode(['error' => 'Falta al menos un filtro: dni, nombre o nombre_mascota']);
                     }
                     break;
 
@@ -81,6 +82,16 @@ switch ($method) {
                     if (isset($_GET['dni_propietario'])) $filtros['dni_propietario'] = $_GET['dni_propietario'];
                     if (isset($_GET['nombre_mascota'])) $filtros['nombre_mascota'] = $_GET['nombre_mascota'];
                     echo json_encode(getHistorialMedicoCompleto($filtros));
+                    break;
+
+                // Buscar mascotas por coincidencia parcial en el nombre de la mascota
+                case 'mascotas_por_nombre':
+                    if (isset($_GET['nombre_mascota'])) {
+                        echo json_encode(getMascotasPorNombreParcial($_GET['nombre_mascota']));
+                    } else {
+                        http_response_code(400);
+                        echo json_encode(['error' => 'Falta nombre_mascota']);
+                    }
                     break;
 
                 default:
