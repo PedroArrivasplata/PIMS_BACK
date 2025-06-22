@@ -1,128 +1,39 @@
 <?php
-//--- NO SE USA ESTA API ---
-// --- API TOKEN INTEGRATED ---
-// --- HEADERS PARA CORS Y JSON ---
-header("Content-Type: application/json; charset=UTF-8");
+// API pública para gestión de cartillas, consultas, exámenes y búsquedas mixtas
+require_once 'funcionesconsultor.php';
+require_once 'funcionesveterinario.php';
+
 header("Access-Control-Allow-Origin: *");
 header("Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS");
 header("Access-Control-Allow-Headers: Content-Type, Authorization, X-Requested-With");
+header("Content-Type: application/json");
+
+$method = $_SERVER['REQUEST_METHOD'];
 
 // Manejo de preflight (OPTIONS)
-if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
+if ($method === 'OPTIONS') {
     http_response_code(200);
     exit;
 }
 
-// --- INCLUSIÓN DE FUNCIONES Y JWT ---
-require_once __DIR__ . '/../vendor/autoload.php'; // Composer autoload
-require_once __DIR__ . '/../models/funcionesUsuario.php';
-require_once __DIR__ . '/../models/funcionesconsultor.php';
-require_once __DIR__ . '/../models/funcionesveterinario.php';
-
-use Firebase\JWT\JWT;
-use Firebase\JWT\Key;
-
-// --- CONFIGURACIÓN ---
-define('JWT_SECRET', 'tu_clave_secreta'); // Cambia esto por una clave segura
-
-// --- FUNCIONES AUXILIARES JWT ---
-function getBearerToken() {
-    $headers = [];
-    if (function_exists('apache_request_headers')) {
-        $headers = apache_request_headers();
-    }
-    if (isset($headers['Authorization'])) {
-        if (preg_match('/Bearer\s(\S+)/', $headers['Authorization'], $matches)) {
-            return $matches[1];
-        }
-    }
-    if (isset($_SERVER['HTTP_AUTHORIZATION'])) {
-        if (preg_match('/Bearer\s(\S+)/', $_SERVER['HTTP_AUTHORIZATION'], $matches)) {
-            return $matches[1];
-        }
-    }
-    return null;
-}
-
-function authGuard($rolesPermitidos = []) {
-    $token = getBearerToken();
-    if (!$token) {
-        http_response_code(401);
-        echo json_encode(['error' => 'Token no proporcionado']);
-        exit;
-    }
-    try {
-        $decoded = JWT::decode($token, new Key(JWT_SECRET, 'HS256'));
-        if (!empty($rolesPermitidos) && (!isset($decoded->rol) || !in_array($decoded->rol, $rolesPermitidos))) {
-            http_response_code(403);
-            echo json_encode(['error' => 'No tienes permisos para acceder a este recurso']);
-            exit;
-        }
-        return $decoded;
-    } catch (Exception $e) {
-        http_response_code(401);
-        echo json_encode(['error' => 'Token inválido o expirado']);
-        exit;
-    }
-}
-
-// --- API PRINCIPAL ---
-$method = $_SERVER['REQUEST_METHOD'];
-$input = json_decode(file_get_contents("php://input"), true);
-
-// --- LOGIN ---
-if (isset($_GET['endpoint']) && $_GET['endpoint'] === 'login' && $method === 'POST') {
-    if (!isset($input['correo']) || !isset($input['clave'])) {
-        http_response_code(400);
-        echo json_encode(["error" => "Faltan parámetros: correo y clave requeridos."]);
-        exit;
-    }
-    $correo = $input['correo'];
-    $clave = $input['clave'];
-    $resultado = obtenerUsuarioPorCorreoYClave($correo, $clave);
-
-    switch ($resultado['estado']) {
-        case 'ok':
-            $usuario = $resultado['usuario'];
-            $payload = [
-                'user' => $correo,
-                'rol' => $usuario['rol'] ?? 'usuario',
-                'iat' => time(),
-                'exp' => time() + 3600
-            ];
-            $token = JWT::encode($payload, JWT_SECRET, 'HS256');
-            http_response_code(200);
-            echo json_encode([
-                "success" => true,
-                "token" => $token,
-                "usuario" => $usuario
-            ]);
-            break;
-        case 'correo_no_encontrado':
-            http_response_code(404);
-            echo json_encode(["error" => "Correo no registrado."]);
-            break;
-        case 'clave_incorrecta':
-            http_response_code(401);
-            echo json_encode(["error" => "Contraseña incorrecta."]);
-            break;
-        default:
-            http_response_code(500);
-            echo json_encode(["error" => "Error inesperado al procesar la solicitud."]);
-            break;
-    }
-    exit;
-}
-
-// --- ENDPOINTS PROTEGIDOS ---
 switch ($method) {
     // =========================
-    // GET
+    // GET: Consultas y búsquedas
     // =========================
     case 'GET':
-        authGuard(['consultor', 'veterinario', 'recepcionista', 'usuario']); // Ajusta roles según tu sistema
         if (isset($_GET['endpoint'])) {
             switch ($_GET['endpoint']) {
+                // Buscar mascotas por DNI de propietario
+                case 'mascotas_por_dni':
+                    if (isset($_GET['dni_propietario'])) {
+                        echo json_encode(getMascotasPorPropietario($_GET['dni_propietario']));
+                    } else {
+                        http_response_code(400);
+                        echo json_encode(['error' => 'Falta dni_propietario']);
+                    }
+                    break;
+
+                // Buscar cartilla por id_mascota
                 case 'cartilla':
                     if (isset($_GET['id_mascota'])) {
                         echo json_encode(consultarCartilla($_GET['id_mascota']));
@@ -131,18 +42,28 @@ switch ($method) {
                         echo json_encode(['error' => 'Falta id_mascota']);
                     }
                     break;
+
+                // Consultar citas con filtros mixtos
                 case 'citas':
-                    if (isset($_GET['filtros'])) {
-                        $filtros = json_decode($_GET['filtros'], true);
+                    $filtros = [];
+                    if (isset($_GET['fecha'])) $filtros['fecha'] = $_GET['fecha'];
+                    if (isset($_GET['nombre_mascota'])) $filtros['nombre_mascota'] = $_GET['nombre_mascota'];
+                    if (isset($_GET['dni_propietario'])) $filtros['dni_propietario'] = $_GET['dni_propietario'];
+                    if (!empty($filtros)) {
                         echo json_encode(getCitasFiltradas($filtros));
                     } else {
                         echo json_encode(getCitasProgramadas());
                     }
                     break;
+
+                // Consultar historial médico con criterios mixtos
                 case 'historial':
-                    $filtros = $_GET['filtros'] ?? [];
+                    $filtros = [];
+                    if (isset($_GET['dni_propietario'])) $filtros['dni_propietario'] = $_GET['dni_propietario'];
+                    if (isset($_GET['nombre_mascota'])) $filtros['nombre_mascota'] = $_GET['nombre_mascota'];
                     echo json_encode(getHistorialMedicoCompleto($filtros));
                     break;
+
                 default:
                     http_response_code(404);
                     echo json_encode(['error' => 'Endpoint GET no reconocido']);
@@ -154,13 +75,14 @@ switch ($method) {
         break;
 
     // =========================
-    // POST
+    // POST: Creación de registros
     // =========================
     case 'POST':
-        authGuard(['consultor', 'veterinario']);
-        $data = $input;
+        $data = json_decode(file_get_contents("php://input"), true);
+
         if (isset($_GET['endpoint'])) {
             switch ($_GET['endpoint']) {
+                // Crear cartilla (requiere id_mascota e id_consultor)
                 case 'cartilla':
                     if (isset($data['id_mascota']) && isset($data['id_consultor'])) {
                         echo json_encode(crearCartilla($data['id_mascota'], $data['id_consultor']));
@@ -169,6 +91,8 @@ switch ($method) {
                         echo json_encode(['error' => 'Faltan datos requeridos']);
                     }
                     break;
+
+                // Crear consulta médica
                 case 'consulta':
                     $required = ['diagnostico', 'sintomas', 'observaciones', 'tratamiento', 'tipo_consulta_id', 'cita_id'];
                     if (count(array_intersect(array_keys($data), $required)) === count($required)) {
@@ -186,6 +110,8 @@ switch ($method) {
                         echo json_encode(['error' => 'Faltan datos requeridos para consulta']);
                     }
                     break;
+
+                // Crear examen médico
                 case 'examen':
                     $required = ['examen_generado', 'formato', 'fecha', 'tipo_examen_id', 'consulta_id'];
                     if (count(array_intersect(array_keys($data), $required)) === count($required)) {
@@ -202,6 +128,7 @@ switch ($method) {
                         echo json_encode(['error' => 'Faltan datos requeridos para examen']);
                     }
                     break;
+
                 default:
                     http_response_code(404);
                     echo json_encode(['error' => 'Endpoint POST no reconocido']);
@@ -213,13 +140,14 @@ switch ($method) {
         break;
 
     // =========================
-    // PUT
+    // PUT: Actualización de registros
     // =========================
     case 'PUT':
-        authGuard(['consultor', 'veterinario']);
-        $data = $input;
+        $data = json_decode(file_get_contents("php://input"), true);
+
         if (isset($_GET['endpoint'])) {
             switch ($_GET['endpoint']) {
+                // Editar consulta médica
                 case 'consulta':
                     if (isset($_GET['id']) && is_numeric($_GET['id'])) {
                         $required = ['diagnostico', 'sintomas', 'observaciones', 'tratamiento', 'tipo_consulta_id'];
@@ -242,6 +170,8 @@ switch ($method) {
                         echo json_encode(['error' => 'ID de consulta requerido']);
                     }
                     break;
+
+                // Editar examen médico
                 case 'examen':
                     if (isset($_GET['id']) && is_numeric($_GET['id'])) {
                         $required = ['examen_generado', 'formato'];
@@ -261,6 +191,7 @@ switch ($method) {
                         echo json_encode(['error' => 'ID de examen requerido']);
                     }
                     break;
+
                 default:
                     http_response_code(404);
                     echo json_encode(['error' => 'Endpoint PUT no reconocido']);
@@ -272,13 +203,14 @@ switch ($method) {
         break;
 
     // =========================
-    // DELETE
+    // DELETE: Eliminación de registros
     // =========================
     case 'DELETE':
-        authGuard(['consultor', 'veterinario']);
-        $data = $input;
+        $data = json_decode(file_get_contents("php://input"), true);
+
         if (isset($_GET['endpoint'])) {
             switch ($_GET['endpoint']) {
+                // Eliminar cartilla
                 case 'cartilla':
                     if (isset($data['id_cartilla'])) {
                         echo json_encode(eliminarCartilla($data['id_cartilla']));
@@ -287,6 +219,8 @@ switch ($method) {
                         echo json_encode(['error' => 'Falta id_cartilla']);
                     }
                     break;
+
+                // Eliminar consulta médica
                 case 'consulta':
                     if (isset($_GET['id']) && is_numeric($_GET['id'])) {
                         $success = deleteConsulta($_GET['id']);
@@ -296,6 +230,8 @@ switch ($method) {
                         echo json_encode(['error' => 'ID de consulta requerido']);
                     }
                     break;
+
+                // Eliminar examen médico
                 case 'examen':
                     if (isset($_GET['id']) && is_numeric($_GET['id'])) {
                         $success = deleteDetalleExamen($_GET['id']);
@@ -305,6 +241,7 @@ switch ($method) {
                         echo json_encode(['error' => 'ID de examen requerido']);
                     }
                     break;
+
                 default:
                     http_response_code(404);
                     echo json_encode(['error' => 'Endpoint DELETE no reconocido']);
@@ -318,7 +255,5 @@ switch ($method) {
     default:
         http_response_code(405);
         echo json_encode(['error' => 'Método no permitido']);
-        break;
 }
-// --- FIN DEL SCRIPT ---
 ?>
