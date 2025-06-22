@@ -1,6 +1,6 @@
 <?php
 require '../models/funcionesUsuario.php';
-
+header('Access-Control-Allow-Origin: http://localhost:5173');
 header("Content-Type: application/json; charset=UTF-8");
 
 $method = $_SERVER['REQUEST_METHOD'];
