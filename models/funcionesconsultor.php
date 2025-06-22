@@ -101,7 +101,43 @@
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
-    // CREAR NUEVA CARTILLA
+    // Obtener mascotas por propietario, filtrando por DNI o nombre
+function getMascotasPorPropietarioFlexible($filtro) {
+    $pdo = conectar();
+    $sql = "SELECT 
+                m.id_mascota, 
+                m.nombre, 
+                TIMESTAMPDIFF(YEAR, m.fecha_nacimiento, CURDATE()) AS edad,
+                r.nombre_raza AS raza,
+                e.nombre_especie AS especie,
+                CONCAT(p.nombre, ' ', p.apellido) AS propietario,
+                p.dni AS dni_propietario
+            FROM mascota m
+            JOIN raza r ON m.raza_id_raza = r.id_raza
+            JOIN especie e ON r.especie_id_especie = e.id_especie
+            JOIN propietario_mascota p ON m.id_propietario = p.id_propietario
+            WHERE 1=1";
+
+    $params = [];
+
+    if (!empty($filtro['dni'])) {
+        $sql .= " AND p.dni like '%'+:dni+'%'";
+        $params[':dni'] = $filtro['dni'];
+    }
+    if (!empty($filtro['nombre'])) {
+        $sql .= " AND (p.nombre LIKE :nombre OR p.apellido LIKE :nombre)";
+        $params[':nombre'] = '%' . $filtro['nombre'] . '%';
+    }
+
+    $stmt = $pdo->prepare($sql);
+    foreach ($params as $key => $value) {
+        $stmt->bindValue($key, $value);
+    }
+    $stmt->execute();
+    return $stmt->fetchAll(PDO::FETCH_ASSOC);
+}
+
+// CREAR NUEVA CARTILLA
     function crearCartilla($id_mascota, $id_consultor) {
         $pdo = conectar();
         
@@ -272,8 +308,9 @@
         $pdo = conectar();
         $sql = "SELECT 
                     m.id_mascota,
-                    m.nombre AS nombre_mascota,
+                    m.nombre AS nombre,
                     m.fecha_nacimiento,
+                    TIMESTAMPDIFF(YEAR, m.fecha_nacimiento, CURDATE()) AS edad,
                     m.color,
                     m.sexo,
                     m.caracteristicas_fisicas,
