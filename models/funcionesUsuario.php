@@ -1,5 +1,5 @@
 <?php
-require 'funcionesbasicas.php';
+require_once 'funcionesbasicas.php';
 function obtenerUsuarioPorCorreoYClave($correo, $clave) {
     $pdo = conectar();
     $sql = "SELECT u.nombres, u.apellidos, u.dni, u.celular, t.nombre_usuario, u.password

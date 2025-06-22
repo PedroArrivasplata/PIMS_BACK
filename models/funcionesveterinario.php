@@ -1,5 +1,5 @@
 <?php
-    require 'funcionesbasicas.php';
+    require_once 'funcionesbasicas.php';
     function insertConsulta($diagnostico, $sintomas, $observaciones, $tratamiento, $tipo_consulta_id_tipo_consulta, $cita_id_cita) {
         $pdo = conectar();
         $sql = "INSERT INTO consulta (diagnostico, sintomas, observaciones, tratamiento, tipo_consulta_id_tipo_consulta, cita_id_cita)

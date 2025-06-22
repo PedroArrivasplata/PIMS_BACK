@@ -1,5 +1,5 @@
 <?php
-    require 'funcionesbasicas.php';
+    require_once 'funcionesbasicas.php';
     //-- CONSULTAR CITAS PROGRAMADAS --//
     // Consultar todas las citas programadas (para el consultor)
     function getCitasProgramadas() {
@@ -260,5 +260,30 @@
                 'message' => $e->getMessage()
             ];
         }
+    }
+
+    // Obtener todas las mascotas registradas
+    function getTodasLasMascotas() {
+        $pdo = conectar();
+        $sql = "SELECT 
+                    m.id_mascota,
+                    m.nombre AS nombre_mascota,
+                    m.fecha_nacimiento,
+                    m.color,
+                    m.sexo,
+                    m.caracteristicas_fisicas,
+                    m.tamano,
+                    m.peso,
+                    r.nombre_raza,
+                    e.nombre_especie,
+                    CONCAT(p.nombre, ' ', p.apellido) AS propietario,
+                    p.dni AS dni_propietario
+                FROM mascota m
+                JOIN raza r ON m.raza_id_raza = r.id_raza
+                JOIN especie e ON r.especie_id_especie = e.id_especie
+                JOIN propietario_mascota p ON m.id_propietario = p.id_propietario";
+        $stmt = $pdo->prepare($sql);
+        $stmt->execute();
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 ?>

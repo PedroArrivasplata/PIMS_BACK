@@ -1,7 +1,7 @@
 <?php
 // API pública para gestión de cartillas, consultas, exámenes y búsquedas mixtas
-require_once 'funcionesconsultor.php';
-require_once 'funcionesveterinario.php';
+require_once __DIR__ . '/../models/funcionesconsultor.php';
+require_once __DIR__ . '/../models/funcionesveterinario.php';
 
 header("Access-Control-Allow-Origin: *");
 header("Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS");
@@ -25,6 +25,11 @@ switch ($method) {
                         http_response_code(400);
                         echo json_encode(['error' => 'Falta dni_propietario']);
                     }
+                    break;
+
+                // Obtener todas las mascotas registradas
+                case 'todas_mascotas':
+                    echo json_encode(getTodasLasMascotas());
                     break;
 
                 // Buscar cartilla por id_mascota
