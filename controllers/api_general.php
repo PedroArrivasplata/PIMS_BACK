@@ -24,7 +24,7 @@ switch ($method) {
                         echo json_encode(['error' => 'Falta id_mascota']);
                     }
                     break;
-                    
+                                                            
                 case 'citas':
                     if (isset($_GET['filtros'])) {
                         $filtros = json_decode($_GET['filtros'], true);
