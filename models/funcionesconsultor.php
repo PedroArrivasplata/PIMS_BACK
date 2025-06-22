@@ -85,11 +85,16 @@
     // Obtener mascotas por propietario (para filtros)
     function getMascotasPorPropietario($dni_propietario) {
         $pdo = conectar();
-        $sql = "SELECT m.id_mascota, m.nombre 
-                FROM mascota m
-                JOIN propietario_mascota p ON m.id_propietario = p.id_propietario
-                WHERE p.dni = :dni_propietario";
-        
+        $sql = "SELECT 
+                m.id_mascota, 
+                m.nombre, 
+                TIMESTAMPDIFF(YEAR, m.fecha_nacimiento, CURDATE()) AS edad,
+                r.nombre_raza AS raza
+            FROM mascota m
+            JOIN raza r ON m.raza_id_raza = r.id_raza
+            JOIN propietario_mascota p ON m.id_propietario = p.id_propietario
+            WHERE p.dni = :dni_propietario";
+    
         $stmt = $pdo->prepare($sql);
         $stmt->bindValue(":dni_propietario", $dni_propietario, PDO::PARAM_STR);
         $stmt->execute();
@@ -274,8 +279,8 @@
                     m.caracteristicas_fisicas,
                     m.tamano,
                     m.peso,
-                    r.nombre_raza,
-                    e.nombre_especie,
+                    r.nombre_raza as raza,
+                    e.nombre_especie as especie,
                     CONCAT(p.nombre, ' ', p.apellido) AS propietario,
                     p.dni AS dni_propietario
                 FROM mascota m
