@@ -3,10 +3,17 @@
 require_once __DIR__ . '/../models/funcionesconsultor.php';
 require_once __DIR__ . '/../models/funcionesveterinario.php';
 
-header("Access-Control-Allow-Origin: *");
+// SOLO UN HEADER DE ORIGEN
+header("Access-Control-Allow-Origin: http://localhost:5173");
 header("Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS");
 header("Access-Control-Allow-Headers: Content-Type, Authorization, X-Requested-With");
 header("Content-Type: application/json");
+
+// Manejo de preflight (OPTIONS)
+if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
+    http_response_code(200);
+    exit();
+}
 
 $method = $_SERVER['REQUEST_METHOD'];
 
@@ -24,6 +31,19 @@ switch ($method) {
                     } else {
                         http_response_code(400);
                         echo json_encode(['error' => 'Falta dni_propietario']);
+                    }
+                    break;
+
+                // Buscar mascotas por DNI o nombre de propietario (flexible)
+                case 'mascotas_propietario_flexible':
+                    $filtro = [];
+                    if (isset($_GET['dni'])) $filtro['dni'] = $_GET['dni'];
+                    if (isset($_GET['nombre'])) $filtro['nombre'] = $_GET['nombre'];
+                    if (!empty($filtro)) {
+                        echo json_encode(getMascotasPorPropietarioFlexible($filtro));
+                    } else {
+                        http_response_code(400);
+                        echo json_encode(['error' => 'Falta dni o nombre para buscar']);
                     }
                     break;
 
