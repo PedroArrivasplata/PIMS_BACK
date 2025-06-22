@@ -121,8 +121,8 @@ function getMascotasPorPropietarioFlexible($filtro) {
     $params = [];
 
     if (!empty($filtro['dni'])) {
-        $sql .= " AND p.dni like '%'+:dni+'%'";
-        $params[':dni'] = $filtro['dni'];
+    $sql .= " AND p.dni LIKE :dni";
+    $params[':dni'] = '%' . $filtro['dni'] . '%';
     }
     if (!empty($filtro['nombre'])) {
         $sql .= " AND (p.nombre LIKE :nombre OR p.apellido LIKE :nombre)";
