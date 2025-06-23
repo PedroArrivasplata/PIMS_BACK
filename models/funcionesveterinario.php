@@ -81,26 +81,49 @@
     }
 
     // MODIFICAR DetalleExamen
-    function updateDetalleExamen($id_detalle_examen_consulta, $examen_generado, $formato, $fecha, $tipo_examen_medico_id_tipo_examen_medico, $filename = null) {
+    function updateDetalleExamen($id_detalle_examen_consulta, $examen_generado, $fecha, $consulta_id_consulta, $nuevoArchivo = null) {
         $pdo = conectar();
-        $sql = "UPDATE detalle_examen_consulta SET 
-                examen_generado = :examen_generado,
-                formato = :formato,
-                fecha = :fecha,
-                tipo_examen_medico_id_tipo_examen_medico = :tipo_examen_medico_id_tipo_examen_medico";
-        if ($filename !== null) {
-            $sql .= ", filename = :filename";
+
+        // Obtener el registro actual para saber el nombre del archivo anterior
+        $sqlSelect = "SELECT filename FROM detalle_examen_consulta WHERE id_detalle_examen_consulta = :id";
+        $stmtSelect = $pdo->prepare($sqlSelect);
+        $stmtSelect->bindValue(":id", $id_detalle_examen_consulta, PDO::PARAM_INT);
+        $stmtSelect->execute();
+        $registro = $stmtSelect->fetch(PDO::FETCH_ASSOC);
+
+        $nuevoNombreArchivo = $registro['filename'];
+
+        // Si se sube un nuevo archivo, reemplazar el archivo anterior y actualizar el nombre
+        if ($nuevoArchivo && isset($nuevoArchivo['tmp_name']) && $nuevoArchivo['error'] === UPLOAD_ERR_OK) {
+            $ext = strtolower(pathinfo($nuevoArchivo['name'], PATHINFO_EXTENSION));
+            $dir = __DIR__ . '/../data/examenes_medicos/';
+            if (!is_dir($dir)) mkdir($dir, 0777, true);
+
+            // Si cambia el nombre del examen, cambia el nombre del archivo
+            $nuevoNombreArchivo = uniqid('examen_') . '.' . $ext;
+            $rutaNueva = $dir . $nuevoNombreArchivo;
+
+            // Elimina el archivo anterior si existe
+            if (!empty($registro['filename']) && file_exists($dir . $registro['filename'])) {
+                unlink($dir . $registro['filename']);
+            }
+
+            move_uploaded_file($nuevoArchivo['tmp_name'], $rutaNueva);
         }
-        $sql .= " WHERE id_detalle_examen_consulta = :id_detalle_examen_consulta";
+
+        // Actualizar los datos en la base de datos
+        $sql = "UPDATE detalle_examen_consulta SET 
+                    examen_generado = :examen_generado,
+                    fecha = :fecha,
+                    consulta_id_consulta = :consulta_id_consulta,
+                    filename = :filename
+                WHERE id_detalle_examen_consulta = :id_detalle_examen_consulta";
 
         $stmt = $pdo->prepare($sql);
         $stmt->bindValue(":examen_generado", $examen_generado, PDO::PARAM_STR);
-        $stmt->bindValue(":formato", $formato, PDO::PARAM_STR);
         $stmt->bindValue(":fecha", $fecha);
-        $stmt->bindValue(":tipo_examen_medico_id_tipo_examen_medico", $tipo_examen_medico_id_tipo_examen_medico, PDO::PARAM_INT);
-        if ($filename !== null) {
-            $stmt->bindValue(":filename", $filename, PDO::PARAM_STR);
-        }
+        $stmt->bindValue(":consulta_id_consulta", $consulta_id_consulta, PDO::PARAM_INT);
+        $stmt->bindValue(":filename", $nuevoNombreArchivo, PDO::PARAM_STR);
         $stmt->bindValue(":id_detalle_examen_consulta", $id_detalle_examen_consulta, PDO::PARAM_INT);
 
         return $stmt->execute();

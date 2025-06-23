@@ -303,18 +303,19 @@ switch ($method) {
 
                 // Editar examen médico
                 case 'examen':
+                    // Para PUT con archivo, debes usar enctype="multipart/form-data" y $_FILES, pero aquí se asume JSON puro (sin archivo)
                     if (isset($_GET['id']) && is_numeric($_GET['id'])) {
-                        $required = ['examen_generado', 'formato', 'fecha', 'tipo_examen_medico_id_tipo_examen_medico'];
+                        $required = ['examen_generado', 'fecha', 'consulta_id_consulta'];
                         if (count(array_intersect(array_keys($data), $required)) === count($required)) {
-                            // Si se envía filename, también lo actualiza
-                            $filename = isset($data['filename']) ? $data['filename'] : null;
+                            // Si se envía un archivo, deberías manejarlo con $_FILES en una petición separada o adaptar este bloque para multipart/form-data
+                            $nuevoArchivo = null;
+                            // Si implementas subida de archivo, aquí deberías asignar $nuevoArchivo = $_FILES['archivo'];
                             $success = updateDetalleExamen(
                                 $_GET['id'],
                                 $data['examen_generado'],
-                                $data['formato'],
                                 $data['fecha'],
-                                $data['tipo_examen_medico_id_tipo_examen_medico'],
-                                $filename
+                                $data['consulta_id_consulta'],
+                                $nuevoArchivo // null si no hay archivo
                             );
                             echo json_encode(['success' => $success]);
                         } else {
