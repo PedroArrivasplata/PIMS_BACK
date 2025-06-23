@@ -434,4 +434,25 @@ function getExamenesPorMascota($id_mascota) {
     $stmt->execute();
     return $stmt->fetchAll(PDO::FETCH_ASSOC);
 }
+
+// Obtener el detalle de un examen médico por su id_detalle_examen_consulta
+function getDetalleExamenPorId($id_detalle_examen_consulta) {
+    $pdo = conectar();
+    $sql = "SELECT 
+                d.id_detalle_examen_consulta,
+                d.filename,
+                d.examen_generado,
+                d.formato,
+                d.fecha,
+                d.tipo_examen_medico_id_tipo_examen_medico,
+                t.categoria_examen,
+                d.consulta_id_consulta
+            FROM detalle_examen_consulta d
+            JOIN tipo_examen_medico t ON d.tipo_examen_medico_id_tipo_examen_medico = t.id_tipo_examen_medico
+            WHERE d.id_detalle_examen_consulta = :id_detalle_examen_consulta";
+    $stmt = $pdo->prepare($sql);
+    $stmt->bindValue(":id_detalle_examen_consulta", $id_detalle_examen_consulta, PDO::PARAM_INT);
+    $stmt->execute();
+    return $stmt->fetch(PDO::FETCH_ASSOC);
+}
 ?>

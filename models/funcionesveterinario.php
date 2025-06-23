@@ -81,18 +81,28 @@
     }
 
     // MODIFICAR DetalleExamen
-    function updateDetalleExamen($id_detalle_examen_consulta, $examen_generado, $formato) {
+    function updateDetalleExamen($id_detalle_examen_consulta, $examen_generado, $formato, $fecha, $tipo_examen_medico_id_tipo_examen_medico, $filename = null) {
         $pdo = conectar();
         $sql = "UPDATE detalle_examen_consulta SET 
                 examen_generado = :examen_generado,
-                formato = :formato
-                WHERE id_detalle_examen_consulta = :id_detalle_examen_consulta";
-        
+                formato = :formato,
+                fecha = :fecha,
+                tipo_examen_medico_id_tipo_examen_medico = :tipo_examen_medico_id_tipo_examen_medico";
+        if ($filename !== null) {
+            $sql .= ", filename = :filename";
+        }
+        $sql .= " WHERE id_detalle_examen_consulta = :id_detalle_examen_consulta";
+
         $stmt = $pdo->prepare($sql);
         $stmt->bindValue(":examen_generado", $examen_generado, PDO::PARAM_STR);
         $stmt->bindValue(":formato", $formato, PDO::PARAM_STR);
+        $stmt->bindValue(":fecha", $fecha);
+        $stmt->bindValue(":tipo_examen_medico_id_tipo_examen_medico", $tipo_examen_medico_id_tipo_examen_medico, PDO::PARAM_INT);
+        if ($filename !== null) {
+            $stmt->bindValue(":filename", $filename, PDO::PARAM_STR);
+        }
         $stmt->bindValue(":id_detalle_examen_consulta", $id_detalle_examen_consulta, PDO::PARAM_INT);
-        
+
         return $stmt->execute();
     }
 

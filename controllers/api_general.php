@@ -7,13 +7,42 @@ require_once __DIR__ . '/../models/funcionesveterinario.php';
 header("Access-Control-Allow-Origin: http://localhost:5173");
 header("Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS");
 header("Access-Control-Allow-Headers: Content-Type, Authorization, X-Requested-With");
-header("Content-Type: application/json");
 
 // Manejo de preflight (OPTIONS)
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     http_response_code(200);
     exit();
 }
+
+if (
+    isset($_GET['endpoint']) &&
+    $_GET['endpoint'] === 'descargar_examen' &&
+    $_SERVER['REQUEST_METHOD'] === 'GET'
+) {
+    if (isset($_GET['filename'])) {
+        $file = __DIR__ . '/../data/examenes_medicos/' . basename($_GET['filename']);
+        if (file_exists($file)) {
+            $mime = mime_content_type($file);
+            header('Content-Type: ' . $mime);
+            header('Content-Disposition: attachment; filename="' . basename($file) . '"');
+            header('Content-Length: ' . filesize($file));
+            readfile($file);
+            exit;
+        } else {
+            header('Content-Type: application/json');
+            http_response_code(404);
+            echo json_encode(['error' => 'Archivo no encontrado']);
+            exit;
+        }
+    } else {
+        header('Content-Type: application/json');
+        http_response_code(400);
+        echo json_encode(['error' => 'Falta filename']);
+        exit;
+    }
+}
+
+header("Content-Type: application/json");
 
 $method = $_SERVER['REQUEST_METHOD'];
 
@@ -106,6 +135,15 @@ switch ($method) {
                     } else {
                         http_response_code(400);
                         echo json_encode(['error' => 'Falta parámetro id_mascota']);
+                    }
+                    break;
+
+                case 'detalle_examen':
+                    if (isset($_GET['id'])) {
+                        echo json_encode(getDetalleExamenPorId($_GET['id']));
+                    } else {
+                        http_response_code(400);
+                        echo json_encode(['error' => 'Falta parámetro id_detalle_examen_consulta']);
                     }
                     break;
 
@@ -266,12 +304,17 @@ switch ($method) {
                 // Editar examen médico
                 case 'examen':
                     if (isset($_GET['id']) && is_numeric($_GET['id'])) {
-                        $required = ['examen_generado', 'formato'];
+                        $required = ['examen_generado', 'formato', 'fecha', 'tipo_examen_medico_id_tipo_examen_medico'];
                         if (count(array_intersect(array_keys($data), $required)) === count($required)) {
+                            // Si se envía filename, también lo actualiza
+                            $filename = isset($data['filename']) ? $data['filename'] : null;
                             $success = updateDetalleExamen(
                                 $_GET['id'],
                                 $data['examen_generado'],
-                                $data['formato']
+                                $data['formato'],
+                                $data['fecha'],
+                                $data['tipo_examen_medico_id_tipo_examen_medico'],
+                                $filename
                             );
                             echo json_encode(['success' => $success]);
                         } else {
