@@ -99,6 +99,16 @@ switch ($method) {
                     echo json_encode(getTodosLosExamenesMedicos());
                     break;
 
+                // Obtener todos los exámenes médicos asociados a una mascota por su id
+                case 'examenes_por_mascota':
+                    if (isset($_GET['id_mascota'])) {
+                        echo json_encode(getExamenesPorMascota($_GET['id_mascota']));
+                    } else {
+                        http_response_code(400);
+                        echo json_encode(['error' => 'Falta parámetro id_mascota']);
+                    }
+                    break;
+
                 default:
                     http_response_code(404);
                     echo json_encode(['error' => 'Endpoint GET no reconocido']);
