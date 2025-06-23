@@ -7,13 +7,42 @@ require_once __DIR__ . '/../models/funcionesveterinario.php';
 header("Access-Control-Allow-Origin: http://localhost:5173");
 header("Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS");
 header("Access-Control-Allow-Headers: Content-Type, Authorization, X-Requested-With");
-header("Content-Type: application/json");
 
 // Manejo de preflight (OPTIONS)
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     http_response_code(200);
     exit();
 }
+
+if (
+    isset($_GET['endpoint']) &&
+    $_GET['endpoint'] === 'descargar_examen' &&
+    $_SERVER['REQUEST_METHOD'] === 'GET'
+) {
+    if (isset($_GET['filename'])) {
+        $file = __DIR__ . '/../data/examenes_medicos/' . basename($_GET['filename']);
+        if (file_exists($file)) {
+            $mime = mime_content_type($file);
+            header('Content-Type: ' . $mime);
+            header('Content-Disposition: attachment; filename="' . basename($file) . '"');
+            header('Content-Length: ' . filesize($file));
+            readfile($file);
+            exit;
+        } else {
+            header('Content-Type: application/json');
+            http_response_code(404);
+            echo json_encode(['error' => 'Archivo no encontrado']);
+            exit;
+        }
+    } else {
+        header('Content-Type: application/json');
+        http_response_code(400);
+        echo json_encode(['error' => 'Falta filename']);
+        exit;
+    }
+}
+
+header("Content-Type: application/json");
 
 $method = $_SERVER['REQUEST_METHOD'];
 
@@ -97,6 +126,25 @@ switch ($method) {
                 // Obtener todos los exámenes médicos registrados
                 case 'todos_examenes_medicos':
                     echo json_encode(getTodosLosExamenesMedicos());
+                    break;
+
+                // Obtener todos los exámenes médicos asociados a una mascota por su id
+                case 'examenes_por_mascota':
+                    if (isset($_GET['id_mascota'])) {
+                        echo json_encode(getExamenesPorMascota($_GET['id_mascota']));
+                    } else {
+                        http_response_code(400);
+                        echo json_encode(['error' => 'Falta parámetro id_mascota']);
+                    }
+                    break;
+
+                case 'detalle_examen':
+                    if (isset($_GET['id'])) {
+                        echo json_encode(getDetalleExamenPorId($_GET['id']));
+                    } else {
+                        http_response_code(400);
+                        echo json_encode(['error' => 'Falta parámetro id_detalle_examen_consulta']);
+                    }
                     break;
 
                 default:
@@ -255,13 +303,19 @@ switch ($method) {
 
                 // Editar examen médico
                 case 'examen':
+                    // Para PUT con archivo, debes usar enctype="multipart/form-data" y $_FILES, pero aquí se asume JSON puro (sin archivo)
                     if (isset($_GET['id']) && is_numeric($_GET['id'])) {
-                        $required = ['examen_generado', 'formato'];
+                        $required = ['examen_generado', 'fecha', 'consulta_id_consulta'];
                         if (count(array_intersect(array_keys($data), $required)) === count($required)) {
+                            // Si se envía un archivo, deberías manejarlo con $_FILES en una petición separada o adaptar este bloque para multipart/form-data
+                            $nuevoArchivo = null;
+                            // Si implementas subida de archivo, aquí deberías asignar $nuevoArchivo = $_FILES['archivo'];
                             $success = updateDetalleExamen(
                                 $_GET['id'],
                                 $data['examen_generado'],
-                                $data['formato']
+                                $data['fecha'],
+                                $data['consulta_id_consulta'],
+                                $nuevoArchivo // null si no hay archivo
                             );
                             echo json_encode(['success' => $success]);
                         } else {

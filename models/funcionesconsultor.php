@@ -410,4 +410,49 @@ function getTodosLosExamenesMedicos() {
     $stmt->execute();
     return $stmt->fetchAll(PDO::FETCH_ASSOC);
 }
+
+// Obtener todos los exámenes médicos asociados a una mascota por su id
+function getExamenesPorMascota($id_mascota) {
+    $pdo = conectar();
+    $sql = "SELECT 
+                d.id_detalle_examen_consulta,
+                d.filename,
+                d.examen_generado,
+                d.formato,
+                d.fecha,
+                d.tipo_examen_medico_id_tipo_examen_medico,
+                t.categoria_examen,
+                d.consulta_id_consulta
+            FROM detalle_examen_consulta d
+            JOIN tipo_examen_medico t ON d.tipo_examen_medico_id_tipo_examen_medico = t.id_tipo_examen_medico
+            JOIN consulta c ON d.consulta_id_consulta = c.id_consulta
+            JOIN cita ci ON c.cita_id_cita = ci.id_cita
+            WHERE ci.mascota_id_mascota = :id_mascota
+            ORDER BY d.fecha DESC";
+    $stmt = $pdo->prepare($sql);
+    $stmt->bindValue(":id_mascota", $id_mascota, PDO::PARAM_INT);
+    $stmt->execute();
+    return $stmt->fetchAll(PDO::FETCH_ASSOC);
+}
+
+// Obtener el detalle de un examen médico por su id_detalle_examen_consulta
+function getDetalleExamenPorId($id_detalle_examen_consulta) {
+    $pdo = conectar();
+    $sql = "SELECT 
+                d.id_detalle_examen_consulta,
+                d.filename,
+                d.examen_generado,
+                d.formato,
+                d.fecha,
+                d.tipo_examen_medico_id_tipo_examen_medico,
+                t.categoria_examen,
+                d.consulta_id_consulta
+            FROM detalle_examen_consulta d
+            JOIN tipo_examen_medico t ON d.tipo_examen_medico_id_tipo_examen_medico = t.id_tipo_examen_medico
+            WHERE d.id_detalle_examen_consulta = :id_detalle_examen_consulta";
+    $stmt = $pdo->prepare($sql);
+    $stmt->bindValue(":id_detalle_examen_consulta", $id_detalle_examen_consulta, PDO::PARAM_INT);
+    $stmt->execute();
+    return $stmt->fetch(PDO::FETCH_ASSOC);
+}
 ?>
