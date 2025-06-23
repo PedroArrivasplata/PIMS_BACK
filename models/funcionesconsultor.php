@@ -363,4 +363,51 @@ function getMascotasPorPropietarioFlexible($filtro) {
         $stmt->execute();
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
+
+// Obtener todas las consultas médicas asociadas a una mascota por su id
+function getConsultasPorMascota($id_mascota) {
+    $pdo = conectar();
+    $sql = "SELECT 
+                c.id_consulta,
+                c.diagnostico,
+                c.sintomas,
+                c.observaciones,
+                c.tratamiento,
+                c.tipo_consulta_id_tipo_consulta,
+                tc.tipo_consulta,
+                tc.definicion_consulta,
+                c.cita_id_cita,
+                ci.fecha_cita,
+                ci.hora_cita,
+                ci.motivo
+            FROM consulta c
+            JOIN tipo_consulta tc ON c.tipo_consulta_id_tipo_consulta = tc.id_tipo_consulta
+            JOIN cita ci ON c.cita_id_cita = ci.id_cita
+            WHERE ci.mascota_id_mascota = :id_mascota
+            ORDER BY ci.fecha_cita DESC, ci.hora_cita DESC";
+    $stmt = $pdo->prepare($sql);
+    $stmt->bindValue(":id_mascota", $id_mascota, PDO::PARAM_INT);
+    $stmt->execute();
+    return $stmt->fetchAll(PDO::FETCH_ASSOC);
+}
+
+// Obtener todos los exámenes médicos registrados
+function getTodosLosExamenesMedicos() {
+    $pdo = conectar();
+    $sql = "SELECT 
+                d.id_detalle_examen_consulta,
+                d.filename,
+                d.examen_generado,
+                d.formato,
+                d.fecha,
+                d.tipo_examen_medico_id_tipo_examen_medico,
+                t.categoria_examen,
+                d.consulta_id_consulta
+            FROM detalle_examen_consulta d
+            JOIN tipo_examen_medico t ON d.tipo_examen_medico_id_tipo_examen_medico = t.id_tipo_examen_medico
+            ORDER BY d.fecha DESC";
+    $stmt = $pdo->prepare($sql);
+    $stmt->execute();
+    return $stmt->fetchAll(PDO::FETCH_ASSOC);
+}
 ?>

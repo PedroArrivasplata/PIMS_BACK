@@ -52,18 +52,31 @@
 
     //-- GESTIONAR DETALLE DE LOS EXAMENES --//
     // INSERTAR DetalleExamen
-    function insertDetalleExamen($examen_generado, $formato, $fecha, $tipo_examen_medico_id_tipo_examen_medico, $consulta_id_consulta) {
+    function insertDetalleExamen($filename, $examen_generado, $formato, $fecha, $tipo_examen_medico_id_tipo_examen_medico, $consulta_id_consulta) {
         $pdo = conectar();
-        $sql = "INSERT INTO detalle_examen_consulta (examen_generado, formato, fecha, tipo_examen_medico_id_tipo_examen_medico, consulta_id_consulta)
-                VALUES (:examen_generado, :formato, :fecha, :tipo_examen_medico_id_tipo_examen_medico, :consulta_id_consulta)";
-        
+        $sql = "INSERT INTO detalle_examen_consulta (
+                    filename,
+                    examen_generado,
+                    formato,
+                    fecha,
+                    tipo_examen_medico_id_tipo_examen_medico,
+                    consulta_id_consulta
+                ) VALUES (
+                    :filename,
+                    :examen_generado,
+                    :formato,
+                    :fecha,
+                    :tipo_examen_medico_id_tipo_examen_medico,
+                    :consulta_id_consulta
+                )";
         $stmt = $pdo->prepare($sql);
+        $stmt->bindValue(":filename", $filename, PDO::PARAM_STR);
         $stmt->bindValue(":examen_generado", $examen_generado, PDO::PARAM_STR);
         $stmt->bindValue(":formato", $formato, PDO::PARAM_STR);
         $stmt->bindValue(":fecha", $fecha);
         $stmt->bindValue(":tipo_examen_medico_id_tipo_examen_medico", $tipo_examen_medico_id_tipo_examen_medico, PDO::PARAM_INT);
         $stmt->bindValue(":consulta_id_consulta", $consulta_id_consulta, PDO::PARAM_INT);
-        
+
         return $stmt->execute();
     }
 

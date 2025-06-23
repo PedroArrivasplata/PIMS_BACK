@@ -88,13 +88,14 @@ CREATE TABLE IF NOT EXISTS `consulta` (
 -- Tabla detalle_examen_consulta
 DROP TABLE IF EXISTS `detalle_examen_consulta`;
 CREATE TABLE IF NOT EXISTS `detalle_examen_consulta` (
-  `id_detalle_examen_consulta` INT NOT NULL,
+  `id_detalle_examen_consulta` INT NOT NULL AUTO_INCREMENT, -- Cambiado a AUTO_INCREMENT
+  `filename` text null,
   `examen_generado` TEXT NULL,
   `formato` VARCHAR(20) NULL,
   `fecha` DATE NULL,
   `tipo_examen_medico_id_tipo_examen_medico` INT NOT NULL,
   `consulta_id_consulta` INT NOT NULL,
-  PRIMARY KEY (`id_detalle_examen_consulta`, `tipo_examen_medico_id_tipo_examen_medico`, `consulta_id_consulta`),
+  PRIMARY KEY (`id_detalle_examen_consulta`), -- Solo el id como PK
   INDEX `fk_detalle_examen_consulta_tipo_examen_medico_idx` (`tipo_examen_medico_id_tipo_examen_medico` ASC),
   INDEX `fk_detalle_examen_consulta_consulta_idx` (`consulta_id_consulta` ASC),
   CONSTRAINT `fk_detalle_examen_consulta_tipo_examen_medico`
