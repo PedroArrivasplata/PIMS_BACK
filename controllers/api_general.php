@@ -94,6 +94,11 @@ switch ($method) {
                     }
                     break;
 
+                // Obtener todos los exámenes médicos registrados
+                case 'todos_examenes_medicos':
+                    echo json_encode(getTodosLosExamenesMedicos());
+                    break;
+
                 default:
                     http_response_code(404);
                     echo json_encode(['error' => 'Endpoint GET no reconocido']);
@@ -143,19 +148,66 @@ switch ($method) {
 
                 // Crear examen médico
                 case 'examen':
+                    // Verifica que se haya enviado un archivo y los campos requeridos
                     $required = ['examen_generado', 'formato', 'fecha', 'tipo_examen_id', 'consulta_id'];
-                    if (count(array_intersect(array_keys($data), $required)) === count($required)) {
-                        $success = insertDetalleExamen(
-                            $data['examen_generado'],
-                            $data['formato'],
-                            $data['fecha'],
-                            $data['tipo_examen_id'],
-                            $data['consulta_id']
-                        );
-                        echo json_encode(['success' => $success]);
+                    $allFieldsPresent = true;
+                    foreach ($required as $field) {
+                        if (!isset($_POST[$field])) {
+                            $allFieldsPresent = false;
+                            break;
+                        }
+                    }
+                    // Validar que consulta_id no sea vacío
+                    if ($allFieldsPresent && isset($_FILES['archivo']) && $_FILES['archivo']['error'] === UPLOAD_ERR_OK && trim($_POST['consulta_id']) !== '') {
+                        $allowed = ['pdf', 'jpg', 'jpeg', 'png'];
+                        $ext = strtolower(pathinfo($_FILES['archivo']['name'], PATHINFO_EXTENSION));
+                        if (in_array($ext, $allowed)) {
+                            $dir = __DIR__ . '/../data/examenes_medicos/';
+                            if (!is_dir($dir)) mkdir($dir, 0777, true);
+                            // Usar nombre personalizado si se envía, si no usar uniqid
+                            if (isset($_POST['nombre_examen']) && $_POST['nombre_examen']) {
+                                $nombreLimpio = preg_replace('/[^a-zA-Z0-9_\-]/', '_', $_POST['nombre_examen']);
+                                $filename = $nombreLimpio . '.' . $ext;
+                            } else {
+                                $filename = uniqid('examen_') . '.' . $ext;
+                            }
+                            $filepath = $dir . $filename;
+                            try {
+                                if (move_uploaded_file($_FILES['archivo']['tmp_name'], $filepath)) {
+                                    try {
+                                        $success = insertDetalleExamen(
+                                            $filename,
+                                            $_POST['examen_generado'],
+                                            $_POST['formato'],
+                                            $_POST['fecha'],
+                                            $_POST['tipo_examen_id'],
+                                            $_POST['consulta_id']
+                                        );
+                                        if ($success) {
+                                            echo json_encode(['success' => true, 'archivo' => $filename]);
+                                        } else {
+                                            http_response_code(500);
+                                            echo json_encode(['error' => 'Error al guardar en la base de datos (insertDetalleExamen)']);
+                                        }
+                                    } catch (Throwable $ex) {
+                                        http_response_code(500);
+                                        echo json_encode(['error' => 'Excepción: ' . $ex->getMessage()]);
+                                    }
+                                } else {
+                                    http_response_code(500);
+                                    echo json_encode(['error' => 'No se pudo guardar el archivo']);
+                                }
+                            } catch (Throwable $ex) {
+                                http_response_code(500);
+                                echo json_encode(['error' => 'Excepción: ' . $ex->getMessage()]);
+                            }
+                        } else {
+                            http_response_code(400);
+                            echo json_encode(['error' => 'Tipo de archivo no permitido']);
+                        }
                     } else {
                         http_response_code(400);
-                        echo json_encode(['error' => 'Faltan datos requeridos para examen']);
+                        echo json_encode(['error' => 'Faltan datos requeridos para examen o archivo, o consulta_id vacío']);
                     }
                     break;
 

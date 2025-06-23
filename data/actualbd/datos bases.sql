@@ -1,3 +1,4 @@
+use test;
 -- datos_prueba.sql
 
 -- Estados lógicos
@@ -119,3 +120,35 @@ INSERT INTO usuario (
   (1005, 'Pedro', '123456', '999888777', 'pe783845@gmail.com', 'Av. Salud 123', NULL, 1, 1, 'Arrivasplata Mera'),
   (1006, 'David', '123456', '988877766', 'ana@recepcion.com', 'Calle Mascota 456', NULL, 1, 1, 'Paz Aguilar'),
   (1007, 'Kiara', '123456', '977766655', 'carlos@vet.com', 'Jr. Animal 789', NULL, 2, 0, 'Cruz Talledo');
+
+    -- Consultas (4 por cada mascota)
+  INSERT INTO consulta (id_consulta, diagnostico, sintomas, observaciones, tratamiento, tipo_consulta_id_tipo_consulta, cita_id_cita) VALUES
+    -- Mascota 1 (Firulais)
+    (1, 'Saludable', 'Ninguno', 'Todo normal', 'Ninguno', 1, 1),
+    (2, 'Otitis', 'Rascado de orejas', 'Orejas enrojecidas', 'Gotas óticas', 1, 1),
+    (3, 'Vacunado', 'Ninguno', 'Aplicada vacuna anual', 'Reposo 1 día', 2, 1),
+    (4, 'Desparasitado', 'Ninguno', 'Desparasitación interna', 'Dosis única', 1, 1),
+  
+    -- Mascota 2 (Michi)
+    (5, 'Vacunado', 'Ninguno', 'Aplicada vacuna', 'Reposo 1 día', 2, 2),
+    (6, 'Gastritis', 'Vómitos', 'Dieta blanda', 'Omeprazol', 1, 2),
+    (7, 'Chequeo', 'Ninguno', 'Todo normal', 'Ninguno', 1, 2),
+    (8, 'Alergia', 'Picazón', 'Posible alergia alimentaria', 'Cambio de dieta', 1, 2),
+  
+    -- Mascota 3 (Rocky)
+    (9, 'Fractura leve', 'Cojea pata trasera', 'Reposo y analgésico', 'Reposo 7 días', 3, 3),
+    (10, 'Vacunado', 'Ninguno', 'Aplicada vacuna', 'Reposo 1 día', 2, 3),
+    (11, 'Chequeo', 'Ninguno', 'Todo normal', 'Ninguno', 1, 3),
+    (12, 'Otitis', 'Rascado de orejas', 'Orejas inflamadas', 'Gotas óticas', 1, 3),
+  
+    -- Mascota 4 (Pelusa)
+    (13, 'Alergia', 'Picazón', 'Posible alergia alimentaria', 'Cambio de dieta', 1, 4),
+    (14, 'Vacunado', 'Ninguno', 'Aplicada vacuna', 'Reposo 1 día', 2, 4),
+    (15, 'Chequeo', 'Ninguno', 'Todo normal', 'Ninguno', 1, 4),
+    (16, 'Desparasitado', 'Ninguno', 'Desparasitación interna', 'Dosis única', 1, 4),
+  
+    -- Mascota 5 (Piolín)
+    (17, 'Saludable', 'Ninguno', 'Ave en buen estado', 'Ninguno', 1, 5),
+    (18, 'Vacunado', 'Ninguno', 'Aplicada vacuna', 'Reposo 1 día', 2, 5),
+    (19, 'Chequeo', 'Ninguno', 'Todo normal', 'Ninguno', 1, 5),
+    (20, 'Alergia', 'Plumas erizadas', 'Posible alergia ambiental', 'Cambio de jaula', 1, 5);
